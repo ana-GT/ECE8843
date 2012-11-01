@@ -17,8 +17,9 @@ int main( int argc, char* argv [] ) {
   }
   pg.loadMap( argv[1] );
   pg.printCanLocations();
-  pg.getGreedyPolicy();
-  pg.testRun();
+  pg.printNumCans();
+  pg.test_EGreedy(1, 20, 0.01);
 
+  pg.printNumCans();
   return 0;
 }

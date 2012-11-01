@@ -9,11 +9,11 @@
 
 /** 7 actions */
 enum ACTIONS{
-  NORTH = 0,
-  SOUTH = 1,
-  EAST = 2,
-  WEST = 3,
-  STAY = 4,
+  STAY = 0,
+  NORTH = 1,
+  SOUTH = 2,
+  EAST = 3,
+  WEST = 4,
   PICK_UP = 5,
   RANDOM = 6
 };
@@ -46,7 +46,12 @@ class pickupGuy {
   void updateState();
 
   // Greedy behavior
-  void getGreedyPolicy();
+  void test_EGreedy( int _numEpisodes,
+		     int _numPlays,
+		     float _e );
+  int getActionHighestReward( int _current, 
+			      int _north, int _south,
+			      int _east, int _west );
 
   // Policy
   int getAction( int _current,
@@ -55,13 +60,15 @@ class pickupGuy {
 		 int _east,
 		 int _west );
   int performAction( int _action );
-  int evaluateAction( int _action, int _current,
-		      int _north, int _south,
-		      int _east, int _west );
+  int getReward( int _action, int _current,
+		 int _north, int _south,
+		 int _east, int _west );
   
 
   // Debugging functions
   void printCanLocations();
+  void printNumCans();
+  void printCurrentPos();
 
   // Inline functions
   inline bool setCurrentPos( int _x, int _y );

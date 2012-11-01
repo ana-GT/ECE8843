@@ -126,39 +126,110 @@ void pickupGuy::updateState() {
   }
 }
 
+///////////////// GREEDY STUFF ///////////////////
 /**
- * @function getGreedyPolicy
+ * @function test_EGreedy
  */
-void pickupGuy::getGreedyPolicy() {
+void pickupGuy::test_EGreedy( int _numEpisodes,
+			      int _numPlays,
+			      float _e ) {
+  int action;
+  int reward;
+  int totalReward;
+  int initPosX;
+  int initPosY;
+  int explorationCount;
+  int exploitationCount;
 
-  int cost;
-  int maxCost;
-  int maxInd;
-  printf("Get greedy policy \n");
-  for( int c = 0; c < mNumGridTypes; ++c ) {
-    for( int n = 0; n < mNumGridTypes; n++ ) {
-      for( int s = 0; s < mNumGridTypes; ++s ) {
-	for( int e = 0; e < mNumGridTypes; ++e ) {
-	  for( int w = 0; w < mNumGridTypes; ++w ) {
-	    
-	    maxCost = -1000;
-	    maxInd = -1000;
-	    for( int i = 0; i < mNumActions; ++i ) {
-	      
-	      cost = evaluateAction( i, c, n, s, e, w );
-	      if( cost > maxCost ) {
-		maxCost = cost;
-		maxInd = i;
-	      }
-	    }
+  int e = (int) ( _e*100 );
+  int p;
 
-	    mPolicy[ getStateIndex(c,n,s,e,w) ] = maxInd;
+  totalReward = 0;
+  explorationCount = 0;
+  exploitationCount = 0;
+  initPosX = 0; initPosY = 0;
+  setCurrentPos( initPosX, initPosY );
+  printCurrentPos();
+  for( int i = 0; i < _numPlays; ++i ) {
 
-	  } // w
-	} // e
-      } // s
-    } // n
-  } // c
+    p = rand() % 100;
+    updateState();
+
+    // Exploration
+    if( p <= e ) {
+      printf("Exploration: ");
+      explorationCount++;
+      action = RANDOM;
+      printf("Action: %d \n", action );
+    }
+    // Exploitation
+    if( p > e ) {
+      printf("Exploitation: ");
+      exploitationCount++;
+      action = getActionHighestReward( mCurrent, 
+				       mNorth, mSouth,
+				       mEast, mWest );
+    }
+    
+    reward = performAction( action );
+    totalReward += reward;
+    printCurrentPos();
+  }
+
+  printf("[test_EGreedy] Final reward after %d actions: %d \n", _numPlays, totalReward );
+
+}
+
+/**
+ * @function getActionHighestReward
+ */
+int pickupGuy::getActionHighestReward( int _current, 
+				       int _north, int _south,
+				       int _east, int _west ) {
+
+  int maxReward = -1000;
+  int maxInd = -1;
+  int reward;
+
+  for( int i = 0; i < mNumActions-1; ++i ) {
+    reward = getReward( i, _current, 
+			_north, _south,
+			_east, _west );
+    if( reward >= maxReward ) {
+      maxReward = reward;
+      maxInd = i;
+    }
+  }
+  
+  if( maxInd != PICK_UP ) {
+      if( _north == CAN ) {
+	maxReward = MOVE;
+	maxInd = NORTH;
+      }
+      if( _south == CAN ) {
+	maxReward = MOVE;
+      maxInd = SOUTH;
+      }
+      
+      if( _east == CAN ) {
+	maxReward = MOVE;
+      maxInd = EAST;
+      }
+      
+      if( _west == CAN ) {
+	maxReward = MOVE;
+	maxInd = WEST;
+      }
+  } 
+
+  if( maxInd == STAY ) {
+    if( _east != WALL ) {
+      maxInd = EAST;
+    }
+  }
+  
+  printf("Action: %d with reward: %d \n", maxInd, maxReward );
+  return maxInd;
 }
 
 /**
@@ -185,11 +256,9 @@ int pickupGuy::performAction( int _action ) {
 
   // NORTH
   if( _action == NORTH ) {
-    printf("Going north! \n");
     x = mPosX; y = mPosY -1;
     if( isValidGrid(x,y) ) {
-      mPosX = x; 
-      mPosY = y;
+      setCurrentPos(x,y);
       return MOVE;
     } 
     else { 
@@ -199,11 +268,9 @@ int pickupGuy::performAction( int _action ) {
 
   // SOUTH
   else if( _action == SOUTH ) {
-    printf("Going south! \n");
     x = mPosX; y = mPosY + 1;
     if( isValidGrid(x,y) ) {
-      mPosX = x; 
-      mPosY = y;
+      setCurrentPos(x,y);
       return MOVE;
     }    
     else {
@@ -213,11 +280,9 @@ int pickupGuy::performAction( int _action ) {
 
   // EAST
   else if( _action == EAST ) {
-    printf("Going east! \n");
     x = mPosX + 1; y = mPosY;
     if( isValidGrid(x,y) ) {
-      mPosX = x; 
-      mPosY = y;
+      setCurrentPos(x,y);
       return MOVE;
     }    
     else {
@@ -228,11 +293,9 @@ int pickupGuy::performAction( int _action ) {
 
   // WEST
   else if( _action == WEST ) {
-    printf("Going west! \n");
     x = mPosX - 1; y = mPosY;
     if( isValidGrid(x,y) ) {
-      mPosX = x; 
-      mPosY = y;
+      setCurrentPos(x,y);
       return MOVE;
     }    
     else {
@@ -243,9 +306,7 @@ int pickupGuy::performAction( int _action ) {
 
   // STAY
   else if( _action == STAY ) {
-    printf("Staying put! \n");
     x = mPosX; y = mPosY;
-
     if( isValidGrid(x,y) ) {
       return MOVE;
     }
@@ -257,13 +318,11 @@ int pickupGuy::performAction( int _action ) {
   // RANDOM
   else if( _action == RANDOM ) {
     int random = rand()% (mNumActions - 1);
-    printf("Random call--  %d \n", random );
     return performAction( random );
   }
 
   // PICK_UP
   else if( _action == PICK_UP ) {
-    printf("Pickup! \n");
     x = mPosX; y = mPosY;
 
     if( mCurrent == CAN ) {
@@ -286,15 +345,15 @@ int pickupGuy::performAction( int _action ) {
 
 
 /**
- * @function evaluateAction
+ * @function getReward
  */
-int pickupGuy::evaluateAction( int _action, int _current,
-			       int _north, int _south,
-			       int _east, int _west ) {
+int pickupGuy::getReward( int _action, int _current,
+			  int _north, int _south,
+			  int _east, int _west ) {
 
   // NORTH
   if( _action == NORTH ) {
-    if( _north == FREE || _north == CAN) {
+    if( _north == FREE || _north == CAN ) {
       return MOVE;
     } 
     else { 
@@ -345,9 +404,9 @@ int pickupGuy::evaluateAction( int _action, int _current,
   // RANDOM
   else if( _action == RANDOM ) {
     int random = rand()% (mNumActions - 1);
-    return evaluateAction( random, _current,
-			   _north, _south,
-			   _east, _west );
+    return getReward( random, _current,
+		      _north, _south,
+		      _east, _west );
   }
 
   // PICK_UP
@@ -364,40 +423,8 @@ int pickupGuy::evaluateAction( int _action, int _current,
   }
 
   else {
-    printf("[evaluateAction] No recognized action \n");
+    printf("[getReward] No recognized action \n");
   }
-}
-
-
-/**
- * @function testRun
- */
-void pickupGuy::testRun() {
-  printf("test Run \n");
-  int action;
-  int cost;
-  int totalCost;
-
-  // Initialize position
-  int initPosX; int initPosY;
-  initPosX = 0;
-  initPosY = 0;
-  totalCost = 0;
-
-  setCurrentPos( initPosX, initPosY );
-
-  for( int i = 0; i < mNumRunActions; ++i ) {
-    updateState();
-    action = getAction( mCurrent, 
-			mNorth, mSouth, 
-			mEast, mWest );
-    cost = performAction(action);
-    totalCost += cost;
-    printf("[%d] Position: %d %d - recent cost: %d total cost so far: %d \n", i, mPosX, 
-	   mPosY, cost, totalCost );
-  }
-
-  printf("Final cost after %d runs: %d \n", mNumRunActions, totalCost);
 }
 
 /**
@@ -418,4 +445,25 @@ void pickupGuy::printCanLocations() {
 
     }
   }
+}
+
+/**
+ * @function printNumCans
+ */
+void pickupGuy::printNumCans() {
+  int count = 0;
+  for( int i = 0; i < mNumGrids; ++i ) {
+    if( mMap[i] == CAN ) {
+      count++;
+    }
+  }
+
+  printf("Num cans: %d \n", count);
+}
+
+/**
+ * @function printCurrentPos
+ */
+void pickupGuy::printCurrentPos() {
+  printf("Robot current pos: %d %d \n", mPosX, mPosY );
 }
