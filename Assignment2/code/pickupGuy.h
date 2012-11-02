@@ -6,14 +6,15 @@
 #define _PICKUP_GUY_
 
 #include <stdio.h>
+#include <vector>
 
 /** 7 actions */
 enum ACTIONS{
-  STAY = 0,
-  NORTH = 1,
-  SOUTH = 2,
-  EAST = 3,
-  WEST = 4,
+  NORTH = 0,
+  SOUTH = 1,
+  EAST = 2,
+  WEST = 3,
+  STAY = 4,
   PICK_UP = 5,
   RANDOM = 6
 };
@@ -42,6 +43,7 @@ class pickupGuy {
   // Functions
   pickupGuy();
   ~pickupGuy();
+
   void loadMap( char* _mapFile );
   void updateState();
 
@@ -49,16 +51,35 @@ class pickupGuy {
   void test_EGreedy( int _numEpisodes,
 		     int _numPlays,
 		     float _e );
+
+  // Q-Learning
+  void test_QLearning( int _numTrainingEpisodes,
+		       int _numTrainingPlays,
+		       float _alpha,
+		       int _numEpisodes,
+		       int _numPlays,
+		       float _epsilon = 0.05 );
+  int getActionFromQTable( int _state );
+  float getMaxQ( int _state );
+
+  // General stuff
   int getActionHighestReward( int _current, 
 			      int _north, int _south,
 			      int _east, int _west );
 
-  // Policy
-  int getAction( int _current,
-		 int _north,
-		 int _south,
-		 int _east,
-		 int _west );
+  int getActionHighestReward2( int _current, 
+			       int _north, int _south,
+			       int _east, int _west,
+			       bool &_isRandom ); 
+
+  int getRandomAction( int _current, 
+		       int _north, int _south,
+		       int _east, int _west );
+
+  int getRandomActionNoPickup( int _current, 
+			       int _north, int _south,
+			       int _east, int _west );
+
   int performAction( int _action );
   int getReward( int _action, int _current,
 		 int _north, int _south,
@@ -68,7 +89,9 @@ class pickupGuy {
   // Debugging functions
   void printCanLocations();
   void printNumCans();
+  int getNumCans();
   void printCurrentPos();
+  void printAction( int _action );
 
   // Inline functions
   inline bool setCurrentPos( int _x, int _y );
@@ -77,8 +100,10 @@ class pickupGuy {
   inline int getStateIndex( int _current,
 			    int _north, int _south,
 			    int _east, int _west );
-
-  void testRun();
+  inline int getStateFromIndex( int _state,
+				int &_current,
+				int &_north, int &_south,
+				int &_east, int &_west );
 
   // Member variables
 
@@ -95,13 +120,20 @@ class pickupGuy {
 
   static const int mWidth = 10;
   static const int mHeight = 10;
-  int *mPolicy;
+
   int *mMap; 
   int mNumGrids;
   int mNumStates;
   int mNumActions;
   int mNumRunActions;
   int mNumGridTypes;
+
+  // Q-Learning stuff
+  std::vector< std::vector<float> > mQTable;
+  float mDefaultQ;
+  float mGamma;
+
+  char* mMapFilename;
 };
 
 /**
@@ -142,6 +174,29 @@ inline int pickupGuy::getStateIndex( int _current,
 
   return 81*_current + 27*_north + 9*_south + 3*_east + _west;
 }
-				  
+
+/**
+ * @function getStateFromIndex
+ */
+inline int pickupGuy::getStateFromIndex( int _state,
+					 int &_current,
+					 int &_north, int &_south,
+					 int &_east, int &_west ) {
+
+  int temp;
+  _current = _state / 81;
+  temp = _state % 81;
+
+  _north = temp / 27;
+  temp = temp % 27;
+
+  _south = temp / 9;
+  temp = temp % 9;
+
+  _east = temp / 3;
+  temp = temp % 3;
+
+  _west = temp;
+}				  
 
 #endif /** _PICKUP_GUY_ */
