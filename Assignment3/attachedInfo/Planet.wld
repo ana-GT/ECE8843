@@ -1,0 +1,5 @@
+Origin 0 0 0 1 1
+Goal 15 10
+Obstacle 8 12 5 3
+Obstacle 1 7 2 2
+Obstacle 11 0 1 6
